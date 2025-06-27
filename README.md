@@ -10,13 +10,13 @@
 ## 📱 Screenshots
 
 <div align="center">
-  <img src="calc.png" width="200" alt="Main Calculator"/><br>🧮 <b>Main Calculator</b>
+  <img src="screenshots/calc.png" width="200" alt="Main Calculator"/><br>🧮 <b>Main Calculator</b>
   <br><br>
-  <img src="sci.png" width="200" alt="Scientific Calculator"/><br>🔬 <b>Scientific Calculator</b>
+  <img src="screenshots/sci.png" width="200" alt="Scientific Calculator"/><br>🔬 <b>Scientific Calculator</b>
   <br><br>
-  <img src="conv.png" width="200" alt="Unit Converter"/><br>🔄 <b>Unit Converter</b>
+  <img src="screenshots/conv.png" width="200" alt="Unit Converter"/><br>🔄 <b>Unit Converter</b>
   <br><br>
-  <img src="birth.png" width="200" alt="Birthday Calculator"/><br>🎂 <b>Birthday Calculator</b>
+  <img src="screenshots/birth.png" width="200" alt="Birthday Calculator"/><br>🎂 <b>Birthday Calculator</b>
 </div>
 
 ## ✨ Features

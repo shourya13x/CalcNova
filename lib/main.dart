@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:math_expressions/math_expressions.dart' as math_exp;
 
 void main() {
   runApp(const CalculatorAPP());
@@ -97,7 +98,7 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String output = '0';
-  String _output = '0'; //internal output
+  String _expression = '';
   double num1 = 0;
   double num2 = 0;
   String operand = '';
@@ -139,6 +140,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   String binaryValue = '';
   String octalValue = '';
   String hexValue = '';
+  String inputValue = ''; // Add this variable for numeral system converter
 
   // BMI calculator
   double weight = 0;
@@ -184,6 +186,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Kilometers to Meters': 1000,
       'Miles to Kilometers': 1.60934,
       'Kilometers to Miles': 0.621371,
+      'Feet to Inches': 12,
+      'Inches to Feet': 1 / 12,
+      'Feet to Centimeters': 30.48,
+      'Centimeters to Feet': 1 / 30.48,
+      'Inches to Centimeters': 2.54,
+      'Centimeters to Inches': 1 / 2.54,
+      'Miles to Feet': 5280,
+      'Feet to Miles': 1 / 5280,
+      'Miles to Inches': 63360,
+      'Inches to Miles': 1 / 63360,
     },
     'Mass': {
       'Kilograms to Pounds': 2.20462,
@@ -196,6 +208,12 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Ounces to Kilograms': 0.0283495,
       'Pounds to Ounces': 16,
       'Ounces to Pounds': 0.0625,
+      'Pounds to Grams': 453.592,
+      'Grams to Pounds': 1 / 453.592,
+      'Kilograms to Tons': 0.001,
+      'Tons to Kilograms': 1000,
+      'Pounds to Tons': 0.0005,
+      'Tons to Pounds': 2000,
     },
     'Currency': {
       'INR to USD': 0.012,
@@ -211,12 +229,25 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'INR to SAR': 0.045,
       'SAR to INR': 22.20,
       'INR to SGD': 0.016,
+      'SGD to INR': 62.5,
       'USD to EUR': 0.858,
       'EUR to USD': 1.166,
       'USD to GBP': 0.732,
       'GBP to USD': 1.366,
       'USD to JPY': 145.28,
       'JPY to USD': 0.00688,
+      'USD to AED': 3.67,
+      'AED to USD': 0.272,
+      'USD to SAR': 3.75,
+      'SAR to USD': 0.267,
+      'USD to SGD': 1.33,
+      'SGD to USD': 0.752,
+      'EUR to GBP': 0.853,
+      'GBP to EUR': 1.172,
+      'EUR to JPY': 169.32,
+      'JPY to EUR': 0.0059,
+      'GBP to JPY': 198.47,
+      'JPY to GBP': 0.00504,
     },
     'Temperature': {
       'Celsius to Fahrenheit': 32,
@@ -235,6 +266,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Hectares to Square Meters': 10000,
       'Square Meters to Square Miles': 0.000000386102,
       'Square Miles to Square Meters': 2589988.11,
+      'Square Feet to Square Inches': 144,
+      'Square Inches to Square Feet': 1 / 144,
+      'Square Feet to Square Yards': 1 / 9,
+      'Square Yards to Square Feet': 9,
+      'Acres to Hectares': 0.404686,
+      'Hectares to Acres': 2.47105,
+      'Square Miles to Acres': 640,
+      'Acres to Square Miles': 1 / 640,
+      'Square Kilometers to Square Miles': 0.386102,
+      'Square Miles to Square Kilometers': 2.58999,
     },
     'Time': {
       'Seconds to Minutes': 1 / 60,
@@ -249,6 +290,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Years to Days': 365,
       'Weeks to Years': 1 / 52.1429,
       'Years to Weeks': 52.1429,
+      'Seconds to Hours': 1 / 3600,
+      'Hours to Seconds': 3600,
+      'Seconds to Days': 1 / 86400,
+      'Days to Seconds': 86400,
+      'Minutes to Days': 1 / 1440,
+      'Days to Minutes': 1440,
+      'Weeks to Months': 1 / 4.34524,
+      'Months to Weeks': 4.34524,
+      'Months to Years': 1 / 12,
+      'Years to Months': 12,
     },
     'Data': {
       'Bytes to Kilobytes': 1 / 1024,
@@ -259,6 +310,14 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Gigabytes to Megabytes': 1024,
       'Gigabytes to Terabytes': 1 / 1024,
       'Terabytes to Gigabytes': 1024,
+      'Bytes to Megabytes': 1 / (1024 * 1024),
+      'Megabytes to Bytes': 1024 * 1024,
+      'Bytes to Gigabytes': 1 / (1024 * 1024 * 1024),
+      'Gigabytes to Bytes': 1024 * 1024 * 1024,
+      'Kilobytes to Gigabytes': 1 / (1024 * 1024),
+      'Gigabytes to Kilobytes': 1024 * 1024,
+      'Terabytes to Megabytes': 1024 * 1024,
+      'Megabytes to Terabytes': 1 / (1024 * 1024),
     },
     'Volume': {
       'Milliliters to Liters': 1 / 1000,
@@ -273,6 +332,26 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Quarts to Milliliters': 946.353,
       'Milliliters to Gallons': 1 / 3785.41,
       'Gallons to Milliliters': 3785.41,
+      'Liters to Cups': 4.22675,
+      'Cups to Liters': 1 / 4.22675,
+      'Liters to Pints': 2.11338,
+      'Pints to Liters': 1 / 2.11338,
+      'Liters to Quarts': 1.05669,
+      'Quarts to Liters': 1 / 1.05669,
+      'Liters to Gallons': 0.264172,
+      'Gallons to Liters': 3.78541,
+      'Cups to Pints': 1 / 2,
+      'Pints to Cups': 2,
+      'Cups to Quarts': 1 / 4,
+      'Quarts to Cups': 4,
+      'Cups to Gallons': 1 / 16,
+      'Gallons to Cups': 16,
+      'Pints to Quarts': 1 / 2,
+      'Quarts to Pints': 2,
+      'Pints to Gallons': 1 / 8,
+      'Gallons to Pints': 8,
+      'Quarts to Gallons': 1 / 4,
+      'Gallons to Quarts': 4,
     },
     'Speed': {
       'Meters/second to Kilometers/hour': 3.6,
@@ -283,6 +362,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Miles/hour to Kilometers/hour': 1.60934,
       'Meters/second to Knots': 1.94384,
       'Knots to Meters/second': 1 / 1.94384,
+      'Kilometers/hour to Knots': 0.539957,
+      'Knots to Kilometers/hour': 1.852,
+      'Miles/hour to Knots': 0.868976,
+      'Knots to Miles/hour': 1.15078,
+      'Meters/second to Feet/second': 3.28084,
+      'Feet/second to Meters/second': 1 / 3.28084,
+      'Kilometers/hour to Feet/second': 0.911344,
+      'Feet/second to Kilometers/hour': 1.09728,
+      'Miles/hour to Feet/second': 1.46667,
+      'Feet/second to Miles/hour': 1 / 1.46667,
     },
   };
 
@@ -295,18 +384,20 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Kilometers',
       'Miles',
     ],
-    'Mass': ['Kilograms', 'Pounds', 'Grams', 'Ounces'],
+    'Mass': ['Kilograms', 'Pounds', 'Grams', 'Ounces', 'Tons'],
     'Currency': ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'AED', 'SAR', 'SGD'],
     'Temperature': ['Celsius', 'Fahrenheit', 'Kelvin'],
     'Area': [
       'Square Meters',
       'Square Feet',
+      'Square Inches',
+      'Square Yards',
       'Square Kilometers',
       'Square Miles',
       'Acres',
       'Hectares',
     ],
-    'Time': ['Seconds', 'Minutes', 'Hours', 'Days', 'Weeks', 'Years'],
+    'Time': ['Seconds', 'Minutes', 'Hours', 'Days', 'Weeks', 'Months', 'Years'],
     'Data': ['Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes'],
     'Volume': [
       'Milliliters',
@@ -317,20 +408,28 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       'Quarts',
       'Gallons',
     ],
-    'Speed': ['Meters/second', 'Kilometers/hour', 'Miles/hour', 'Knots'],
+    'Speed': [
+      'Meters/second',
+      'Kilometers/hour',
+      'Miles/hour',
+      'Knots',
+      'Feet/second'
+    ],
   };
 
   // Add this helper to the _CalculatorScreenState class:
   String _formatNumber(num value) {
     if (value.isNaN || value.isInfinite) return 'Invalid';
-    if (value.abs() >= 1e9 || (value.abs() < 1e-6 && value != 0)) {
+    // Only use scientific notation for extremely large/small numbers
+    if (value.abs() >= 1e12 || (value.abs() < 1e-6 && value != 0)) {
       return value.toStringAsExponential(4);
     }
+    // For integers, show as integer
     if (value % 1 == 0) {
       return NumberFormat.decimalPattern().format(value);
     }
-    // For decimals, show up to 6 decimals, remove trailing zeros
-    String formatted = value.toStringAsFixed(6);
+    // For decimals, show up to 8 decimals, remove trailing zeros
+    String formatted = value.toStringAsFixed(8);
     formatted = formatted.replaceAll(
       RegExp(r'(\.\d*?)0+'),
       r'\1',
@@ -340,6 +439,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       formatted = formatted.substring(0, formatted.length - 1);
     return NumberFormat.decimalPattern().format(double.parse(formatted));
   }
+
+  // Scientific calculator state
+  bool isDeg = true;
+  bool isInv = false;
+  String _sciExpression = '';
 
   @override
   Widget build(BuildContext context) {
@@ -530,18 +634,29 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           return GestureDetector(
             onTap: () {
               setState(() {
+                isConversionMode = true;
+                isScientificMode = false;
                 selectedCategoryIndex = index;
                 selectedConversionType = category['label'];
+                print('Set selectedCategoryIndex to $selectedCategoryIndex');
+                print('Set selectedConversionType to $selectedConversionType');
                 if (conversionUnits.containsKey(category['label'])) {
                   List<String> units = conversionUnits[category['label']]!;
                   if (units.isNotEmpty) {
                     fromUnit = units[0];
                     toUnit = units.length > 1 ? units[1] : units[0];
+                    print('Set fromUnit to $fromUnit and toUnit to $toUnit');
                   }
                 }
-                _output = '0';
+                _expression = '0';
                 output = '0';
-                _performConversion();
+                if (category['label'] == 'Time') {
+                  print('Calling _performTimeConversion()');
+                  _performTimeConversion();
+                } else {
+                  print('Calling _performConversion()');
+                  _performConversion();
+                }
               });
             },
             child: Container(
@@ -560,6 +675,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   const SizedBox(height: 6),
                   Text(
                     category['label'],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight:
@@ -694,77 +811,90 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   void _handleButtonPress(String button) {
-    if (button == 'C') {
-      _clear();
-    } else if (button == 'DEL') {
-      _delete();
-    } else if (button == '=') {
-      _calculate();
-    } else if (button == '%') {
-      _calculatePercentage();
-    } else {
-      _append(button);
-    }
+    setState(() {
+      if (button == 'C') {
+        _clear();
+      } else if (button == 'DEL') {
+        _delete();
+      } else if (button == '=') {
+        _calculate();
+      } else if (button == '%') {
+        _percent();
+      } else {
+        _append(button);
+      }
+    });
   }
 
   void _clear() {
     output = '0';
-    _output = '0';
+    _expression = '';
     expression = '';
   }
 
   void _delete() {
-    if (output.length > 1) {
-      output = output.substring(0, output.length - 1);
-    } else {
-      output = '0';
+    if (_expression.isNotEmpty) {
+      _expression = _expression.substring(0, _expression.length - 1);
+      output = _expression.isEmpty ? '0' : _expression;
     }
   }
 
-  void _calculate() {
-    if (expression.isNotEmpty) {
-      try {
-        num2 = double.parse(output);
-        if (operand.isNotEmpty) {
-          num1 = double.parse(expression.split(operand)[0]);
-          switch (operand) {
-            case '+':
-              output = (num1 + num2).toString();
-              break;
-            case '-':
-              output = (num1 - num2).toString();
-              break;
-            case '*':
-              output = (num1 * num2).toString();
-              break;
-            case '/':
-              output = (num1 / num2).toString();
-              break;
-          }
-          expression = '';
-        }
-      } catch (e) {
-        output = 'Error';
+  void _append(String button) {
+    // Prevent multiple decimals in a number
+    if (button == '.') {
+      final parts = _expression.split(RegExp(r'[+\-*/]'));
+      if (parts.isNotEmpty && parts.last.contains('.')) return;
+      if (_expression.isEmpty) _expression = '0';
+    }
+    // Prevent consecutive operators
+    if ('+-*/'.contains(button)) {
+      if (_expression.isEmpty) return;
+      if ('+-*/'.contains(_expression[_expression.length - 1])) {
+        _expression = _expression.substring(0, _expression.length - 1) + button;
+        output = _expression;
+        return;
       }
     }
+    // Prevent leading zeros
+    if (_expression == '0' && button != '.') {
+      _expression = button;
+    } else {
+      _expression += button;
+    }
+    output = _expression;
   }
 
-  void _calculatePercentage() {
+  void _percent() {
+    if (_expression.isEmpty) return;
     try {
-      double value = double.parse(output);
-      double percentage = value / 100;
-      output = _formatNumber(percentage);
-      calculationHistory.add('$value% = $output');
+      final math_exp.Parser p = math_exp.Parser();
+      final exp = p.parse(_expression);
+      final math_exp.ContextModel cm = math_exp.ContextModel();
+      double val = exp.evaluate(math_exp.EvaluationType.REAL, cm);
+      val = val / 100.0;
+      _expression = val.toString();
+      output = _expression;
     } catch (e) {
       output = 'Error';
     }
   }
 
-  void _append(String button) {
-    if (output == '0') {
-      output = button;
-    } else {
-      output += button;
+  void _calculate() {
+    if (_expression.isEmpty) return;
+    try {
+      String expStr = _expression
+          .replaceAll('×', '*')
+          .replaceAll('÷', '/')
+          .replaceAll('−', '-');
+      math_exp.Parser p = math_exp.Parser();
+      math_exp.Expression exp = p.parse(expStr);
+      math_exp.ContextModel cm = math_exp.ContextModel();
+      double eval = exp.evaluate(math_exp.EvaluationType.REAL, cm);
+      output = _formatNumber(eval);
+      calculationHistory.add('$_expression = $output');
+      _expression = eval.toString();
+    } catch (e) {
+      output = 'Error';
     }
   }
 
@@ -990,103 +1120,107 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   void _handleScientificButtonPress(String button) {
-    double result = 0;
-    String operation = '';
-    double inputValue = 0;
-
-    try {
-      inputValue = double.parse(output);
-    } catch (e) {
-      setState(() {
-        output = 'Error';
-      });
-      return;
-    }
-
-    switch (button) {
-      case 'sin':
-        operation = 'sin($inputValue°)';
-        result = math.sin(inputValue * math.pi / 180);
-        break;
-      case 'cos':
-        operation = 'cos($inputValue°)';
-        result = math.cos(inputValue * math.pi / 180);
-        break;
-      case 'tan':
-        operation = 'tan($inputValue°)';
-        result = math.tan(inputValue * math.pi / 180);
-        break;
-      case 'π':
-        operation = 'π';
-        result = math.pi;
-        break;
-      case 'e':
-        operation = 'e';
-        result = math.e;
-        break;
-      case 'x²':
-        operation = '$inputValue²';
-        result = inputValue * inputValue;
-        break;
-      case '√':
-        operation = '√$inputValue';
-        result = math.sqrt(inputValue);
-        break;
-      case 'ln':
-        operation = 'ln($inputValue)';
-        result = math.log(inputValue);
-        break;
-      case 'log':
-        operation = 'log($inputValue)';
-        result = math.log(inputValue) / math.ln10;
-        break;
-      case '10^x':
-        operation = '10^$inputValue';
-        result = math.pow(10, inputValue).toDouble();
-        break;
-      case 'e^x':
-        operation = 'e^$inputValue';
-        result = math.exp(inputValue);
-        break;
-      case 'x!':
-        if (inputValue < 0 || inputValue != inputValue.floor()) {
-          setState(() {
-            output = 'Error';
-          });
-          return;
-        }
-        operation = '$inputValue!';
-        result = _factorial(inputValue.toInt());
-        break;
-      case 'C':
-        _clear();
-        return;
-      case 'DEL':
-        _delete();
-        return;
-      case '=':
-        _calculate();
-        return;
-    }
-
     setState(() {
-      output = _formatNumber(result);
-      // Add to history
-      calculationHistory.add('$operation = $output');
+      if (button == 'AC') {
+        _sciExpression = '';
+        output = '0';
+      } else if (button == '⌫') {
+        if (_sciExpression.isNotEmpty) {
+          _sciExpression =
+              _sciExpression.substring(0, _sciExpression.length - 1);
+          output = _sciExpression.isEmpty ? '0' : _sciExpression;
+        }
+      } else if (button == '=') {
+        _evaluateScientificExpression();
+      } else if (button == 'DEG') {
+        isDeg = !isDeg;
+      } else if (button == 'INV') {
+        isInv = !isInv;
+      } else {
+        _appendScientific(button);
+      }
     });
   }
 
-  double _factorial(int n) {
-    if (n <= 1) return 1;
-    double result = 1;
-    for (int i = 2; i <= n; i++) {
-      result *= i;
+  void _appendScientific(String button) {
+    // Map button to math_expressions syntax
+    final Map<String, String> sciMap = {
+      'π': 'pi',
+      'e': 'e',
+      '÷': '/',
+      '×': '*',
+      '−': '-',
+      '^': '^',
+      '(': '(',
+      ')': ')',
+      '%': '/100',
+      '√': 'sqrt(',
+      '!': '!',
+      '.': '.',
+      '+': '+',
+    };
+    final Map<String, String> funcMap = {
+      'sin': isInv ? 'arcsin(' : 'sin(',
+      'cos': isInv ? 'arccos(' : 'cos(',
+      'tan': isInv ? 'arctan(' : 'tan(',
+      'ln': isInv ? 'exp(' : 'ln(',
+      'log': isInv ? '10^(' : 'log(',
+    };
+    if (funcMap.containsKey(button)) {
+      _sciExpression += funcMap[button]!;
+    } else if (sciMap.containsKey(button)) {
+      _sciExpression += sciMap[button]!;
+    } else {
+      _sciExpression += button;
     }
-    return result;
+    output = _sciExpression;
+  }
+
+  void _evaluateScientificExpression() {
+    try {
+      String expStr = _sciExpression;
+      // Auto-complete missing closing parentheses
+      int open = '('.allMatches(expStr).length;
+      int close = ')'.allMatches(expStr).length;
+      if (open > close) {
+        expStr += ')' * (open - close);
+      }
+      // Replace sqrt( with sqrt, handle factorial, and degree/radian for trig
+      expStr = expStr.replaceAll('sqrt(', 'sqrt');
+      // Replace factorials with math_expressions syntax
+      expStr =
+          expStr.replaceAllMapped(RegExp(r'(\d+)!'), (m) => 'fact(${m[1]})');
+      // If DEG mode, wrap trig function arguments with radians conversion
+      if (isDeg) {
+        for (final func in [
+          'sin',
+          'cos',
+          'tan',
+          'arcsin',
+          'arccos',
+          'arctan'
+        ]) {
+          expStr = expStr.replaceAllMapped(
+            RegExp(r'$func\\s*\\(([^()]*)\\)'),
+            (m) => '$func((${m[1]})*pi/180)',
+          );
+        }
+      }
+      math_exp.Parser p = math_exp.Parser();
+      math_exp.Expression exp = p.parse(expStr);
+      math_exp.ContextModel cm = math_exp.ContextModel();
+      double eval = exp.evaluate(math_exp.EvaluationType.REAL, cm);
+      output = _formatNumber(eval);
+      calculationHistory.add('$_sciExpression = $output');
+      _sciExpression = eval.toString();
+    } catch (e) {
+      output = 'Error';
+    }
   }
 
   Widget _buildSelectedConverter() {
     final label = essentialCategories[selectedCategoryIndex]['label'];
+    print('Selected converter: $label with index $selectedCategoryIndex');
 
     // Handle special converters that need custom UI
     switch (label) {
@@ -1100,795 +1234,1648 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         return _buildBMICalculator();
       case 'GST':
         return _buildGSTCalculator();
+      case 'Time':
+        print('Building Time converter');
+        return _buildTimeConverter();
       default:
         return _buildConversionInterface(type: label);
     }
   }
 
   void _performConversion() {
-    if (_output == '0' || _output.isEmpty) return;
+    if (_expression == '0' || _expression.isEmpty) return;
     try {
-      double inputValue = double.parse(_output);
+      double inputValue = double.parse(_expression);
       double result = 0;
       String convType = selectedConversionType;
       String from = fromUnit;
       String to = toUnit;
+
+      // Handle special converters first
+      switch (convType) {
+        case 'Discount':
+          _calculateDiscount(inputValue);
+          return;
+        case 'Date':
+          _calculateDateDifference(inputValue);
+          return;
+        case 'Numeral':
+          _convertNumeralSystem(inputValue);
+          return;
+        case 'BMI':
+          _calculateBMI(inputValue);
+          return;
+        case 'GST':
+          _calculateGST(inputValue);
+          return;
+      }
+
       // Handle temperature conversions (special cases)
       if (convType == 'Temperature') {
-        if (from == to) {
-          result = inputValue;
-        } else if (from == 'Celsius' && to == 'Fahrenheit') {
-          result = inputValue * 9 / 5 + 32;
-        } else if (from == 'Fahrenheit' && to == 'Celsius') {
-          result = (inputValue - 32) * 5 / 9;
-        } else if (from == 'Celsius' && to == 'Kelvin') {
-          result = inputValue + 273.15;
-        } else if (from == 'Kelvin' && to == 'Celsius') {
-          result = inputValue - 273.15;
-        } else if (from == 'Fahrenheit' && to == 'Kelvin') {
-          result = (inputValue - 32) * 5 / 9 + 273.15;
-        } else if (from == 'Kelvin' && to == 'Fahrenheit') {
-          result = (inputValue - 273.15) * 9 / 5 + 32;
-        }
+        print('Temperature conversion: $from to $to');
+        result = _convertTemperature(inputValue, from, to);
       } else {
+        // Handle all other conversions using conversion rates
         String conversionKey = '$from to $to';
+        print('Trying conversion key: $conversionKey');
         if (conversionRates[convType] != null &&
             conversionRates[convType]!.containsKey(conversionKey)) {
           result = inputValue * conversionRates[convType]![conversionKey]!;
         } else {
           // Try reverse conversion
           String reverseKey = '$to to $from';
+          print('Trying reverse key: $reverseKey');
           if (conversionRates[convType] != null &&
               conversionRates[convType]!.containsKey(reverseKey)) {
             result = inputValue / conversionRates[convType]![reverseKey]!;
           } else {
-            result = inputValue;
+            // Try converting through a common unit (robust fallback)
+            print('Trying common unit fallback for $convType');
+            result = _convertThroughCommonUnit(inputValue, convType, from, to);
+            // If still no conversion, show message
+            if (result == inputValue && from != to) {
+              setState(() {
+                output = 'Conversion not available';
+              });
+              return;
+            }
           }
         }
       }
+
       setState(() {
         output = _formatNumber(result);
       });
-      calculationHistory.add('$inputValue $from = $output $to');
+      print('Set output to: $output');
     } catch (e) {
       setState(() {
         output = 'Error';
+        print('Conversion error: $e');
       });
     }
   }
 
-  Widget _buildConversionInterface({String? type}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final String convType = type ?? selectedConversionType;
-    final units = conversionUnits[convType] ?? [];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Unit selectors
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 16),
+  Widget _buildConverterKeypad({required void Function(String) onKeyTap}) {
+    final List<String> keys = [
+      '7',
+      '8',
+      '9',
+      'DEL',
+      '4',
+      '5',
+      '6',
+      'C',
+      '1',
+      '2',
+      '3',
+      '.',
+      '0',
+    ];
+
+    return GridView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: keys.length,
+      itemBuilder: (context, index) {
+        final key = keys[index];
+        Color buttonColor = Colors.white.withOpacity(0.1);
+        Color textColor = Colors.white;
+
+        // Assign different colors to function keys
+        if (key == 'DEL' || key == 'C') {
+          buttonColor = Colors.red.shade400.withOpacity(0.8);
+        }
+
+        return GestureDetector(
+          onTap: () {
+            print('Tapped key: $key');
+            onKeyTap(key);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: buttonColor,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Center(
+              child: Text(
+                key,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize default conversion units
+    if (conversionUnits.containsKey(selectedConversionType)) {
+      List<String> units = conversionUnits[selectedConversionType]!;
+      if (units.isNotEmpty) {
+        fromUnit = units[0];
+        toUnit = units.length > 1 ? units[1] : units[0];
+      }
+    }
+
+    // Add listener to handle category changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize the converter based on the selected category
+      final category = essentialCategories[selectedCategoryIndex]['label'];
+      if (category == 'Time') {
+        _performTimeConversion();
+      } else {
+        _performConversion();
+      }
+    });
+  }
+
+  // Convert through a common unit when direct conversion is not available
+  double _convertThroughCommonUnit(
+      double value, String convType, String from, String to) {
+    // Define common units for each conversion type
+    Map<String, String> commonUnits = {
+      'Length': 'Meters',
+      'Mass': 'Kilograms',
+      'Currency': 'USD',
+      'Area': 'Square Meters',
+      'Time': 'Seconds',
+      'Data': 'Bytes',
+      'Volume': 'Liters',
+      'Speed': 'Meters/second',
+    };
+
+    String commonUnit = commonUnits[convType] ?? '';
+    if (commonUnit.isEmpty) return value;
+
+    // Convert from source to common unit
+    double valueInCommon =
+        _convertToCommonUnit(value, convType, from, commonUnit);
+
+    // Convert from common unit to target
+    return _convertFromCommonUnit(valueInCommon, convType, commonUnit, to);
+  }
+
+  double _convertToCommonUnit(
+      double value, String convType, String from, String commonUnit) {
+    if (from == commonUnit) return value;
+
+    String conversionKey = '$from to $commonUnit';
+    if (conversionRates[convType] != null &&
+        conversionRates[convType]!.containsKey(conversionKey)) {
+      return value * conversionRates[convType]![conversionKey]!;
+    }
+
+    String reverseKey = '$commonUnit to $from';
+    if (conversionRates[convType] != null &&
+        conversionRates[convType]!.containsKey(reverseKey)) {
+      return value / conversionRates[convType]![reverseKey]!;
+    }
+
+    return value; // Fallback
+  }
+
+  double _convertFromCommonUnit(
+      double value, String convType, String commonUnit, String to) {
+    if (to == commonUnit) return value;
+
+    String conversionKey = '$commonUnit to $to';
+    if (conversionRates[convType] != null &&
+        conversionRates[convType]!.containsKey(conversionKey)) {
+      return value * conversionRates[convType]![conversionKey]!;
+    }
+
+    String reverseKey = '$to to $commonUnit';
+    if (conversionRates[convType] != null &&
+        conversionRates[convType]!.containsKey(reverseKey)) {
+      return value / conversionRates[convType]![reverseKey]!;
+    }
+
+    return value; // Fallback
+  }
+
+  // Show calculation history dialog
+  void _showHistoryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Calculation History'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            children: calculationHistory
+                .map((item) => ListTile(title: Text(item)))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show birthday calculator dialog (stub)
+  void _showBirthdayCalculator() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Birthday Calculator'),
+        content: Text('Birthday calculator UI goes here.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Perform time conversion (stub)
+  void _performTimeConversion() {
+    // You can implement the full logic as needed
+    setState(() {
+      output = 'Time conversion result';
+    });
+  }
+
+  // Discount calculation logic - Complete implementation
+  void _calculateDiscount(double value) {
+    if (originalPrice == 0) {
+      originalPrice = value;
+    } else {
+      discountPercent = value;
+      savedAmount = originalPrice * (discountPercent / 100);
+      finalPrice = originalPrice - savedAmount;
+    }
+
+    setState(() {
+      output = _formatNumber(finalPrice);
+    });
+  }
+
+  // Discount calculator UI - Complete implementation
+  Widget _buildDiscountCalculator() {
+    return Column(
+      children: [
+        // Input Cards
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // Original Price Input
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Original Price',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      originalPrice == 0 ? '0' : originalPrice.toString(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Discount Percentage Input
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Discount Percentage',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      discountPercent == 0 ? '0' : discountPercent.toString(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Results
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            children: [
+              // Final Price
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green.shade400, Colors.green.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.shade400.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Final Price',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatNumber(finalPrice),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Saved Amount
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.red.shade400, Colors.red.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.shade400.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Amount Saved',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatNumber(savedAmount),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Keypad
+        Expanded(
+          child: _buildConverterKeypad(onKeyTap: (val) {
+            setState(() {
+              if (val == 'C') {
+                originalPrice = 0;
+                discountPercent = 0;
+                finalPrice = 0;
+                savedAmount = 0;
+                _expression = '';
+                output = '0';
+              } else if (val == 'DEL') {
+                if (_expression.isNotEmpty) {
+                  _expression =
+                      _expression.substring(0, _expression.length - 1);
+                }
+                if (_expression.isEmpty) {
+                  originalPrice = 0;
+                  discountPercent = 0;
+                  finalPrice = 0;
+                  savedAmount = 0;
+                  output = '0';
+                }
+              } else {
+                if (val == '.' && _expression.contains('.')) return;
+                _expression += val;
+                _calculateDiscount(double.tryParse(_expression) ?? 0);
+              }
+            });
+          }),
+        ),
+      ],
+    );
+  }
+
+  // Date calculator UI (stub)
+  Widget _buildDateCalculator() {
+    return Center(child: Text('Date Calculator UI'));
+  }
+
+  // Numeral system converter UI - Complete implementation
+  Widget _buildNumeralSystemConverter() {
+    final List<String> units = ['Decimal', 'Binary', 'Octal', 'Hexadecimal'];
+    return Column(
+      children: [
+        // Input Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: fromUnit,
-                      items: units
-                          .map(
-                            (u) => DropdownMenuItem(value: u, child: Text(u)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          fromUnit = val!;
-                          _performConversion();
-                        });
-                      },
-                    ),
+                Text(
+                  'Input Value',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(Icons.swap_horiz, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: toUnit,
-                      items: units
-                          .map(
-                            (u) => DropdownMenuItem(value: u, child: Text(u)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          toUnit = val!;
-                          _performConversion();
-                        });
-                      },
-                    ),
+                const SizedBox(height: 8),
+                Text(
+                  inputValue.isEmpty ? '0' : inputValue,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          // Input field
-          TextField(
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Enter value',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                _output = val;
-                _performConversion();
-              });
-            },
-          ),
-          const SizedBox(height: 24),
-          // Result
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                '$output $toUnit',
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+        ),
+
+        // Unit Selectors
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Row(
+            children: [
+              // From Unit Dropdown
+              Flexible(
+                flex: 4,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 140),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: fromUnit,
+                      dropdownColor: Colors.black87,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      isExpanded: true,
+                      itemHeight: 48,
+                      items: units.map((String unit) {
+                        return DropdownMenuItem<String>(
+                          value: unit,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(unit, overflow: TextOverflow.ellipsis),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            fromUnit = newValue;
+                            _performConversion();
+                          });
+                        }
+                      },
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showHistoryDialog() {
-    // Implementation of _showHistoryDialog method
-    // This method should show the history dialog
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF0288D1).withOpacity(0.9),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 10,
-                spreadRadius: 2,
+              const SizedBox(width: 8),
+              // Swap Button
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Material(
+                  color: Colors.amber.shade400,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      setState(() {
+                        String temp = fromUnit;
+                        fromUnit = toUnit;
+                        toUnit = temp;
+                        _performConversion();
+                      });
+                    },
+                    child: const Icon(Icons.swap_horiz,
+                        color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // To Unit Dropdown
+              Flexible(
+                flex: 4,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 140),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: toUnit,
+                      dropdownColor: Colors.black87,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      isExpanded: true,
+                      itemHeight: 48,
+                      items: units.map((String unit) {
+                        return DropdownMenuItem<String>(
+                          value: unit,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(unit, overflow: TextOverflow.ellipsis),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            toUnit = newValue;
+                            _performConversion();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        ),
+
+        // Result Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.amber.shade400, Colors.orange.shade400],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.shade400.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Result',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  output,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$fromUnit → $toUnit',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Keypad
+        Expanded(
+          child: _buildConverterKeypad(onKeyTap: (val) {
+            setState(() {
+              if (val == 'C') {
+                _expression = '';
+                output = '0';
+              } else if (val == 'DEL') {
+                if (_expression.isNotEmpty) {
+                  _expression =
+                      _expression.substring(0, _expression.length - 1);
+                }
+                if (_expression.isEmpty) output = '0';
+              } else {
+                if (val == '.' && _expression.contains('.')) return;
+                _expression += val;
+              }
+              _performConversion();
+            });
+          }),
+        ),
+      ],
+    );
+  }
+
+  // Date difference calculation logic (stub)
+  void _calculateDateDifference(double value) {
+    setState(() {
+      output = 'Date difference result';
+    });
+  }
+
+  // Numeral system conversion logic (stub)
+  void _convertNumeralSystem(double value) {
+    setState(() {
+      output = 'Numeral system result';
+    });
+  }
+
+  // BMI calculation logic - Complete implementation
+  void _calculateBMI(double value) {
+    if (weight == 0) {
+      weight = value;
+    } else {
+      height = value;
+      if (height > 0) {
+        bmi = weight / (height * height);
+
+        // Determine BMI category
+        if (bmi < 18.5) {
+          bmiCategory = 'Underweight';
+        } else if (bmi < 25) {
+          bmiCategory = 'Normal Weight';
+        } else if (bmi < 30) {
+          bmiCategory = 'Overweight';
+        } else {
+          bmiCategory = 'Obese';
+        }
+      }
+    }
+
+    setState(() {
+      output = _formatNumber(bmi);
+    });
+  }
+
+  // GST calculation logic - Complete implementation
+  void _calculateGST(double value) {
+    if (basePrice == 0) {
+      basePrice = value;
+    } else {
+      gstPercent = value;
+      gstAmount = basePrice * (gstPercent / 100);
+      totalPrice = basePrice + gstAmount;
+    }
+
+    setState(() {
+      output = _formatNumber(totalPrice);
+    });
+  }
+
+  // Temperature conversion logic - Complete implementation
+  double _convertTemperature(double value, String from, String to) {
+    // First convert to Celsius as base unit
+    double celsius;
+
+    switch (from) {
+      case 'Celsius':
+        celsius = value;
+        break;
+      case 'Fahrenheit':
+        celsius = (value - 32) * 5 / 9;
+        break;
+      case 'Kelvin':
+        celsius = value - 273.15;
+        break;
+      default:
+        return value;
+    }
+
+    // Then convert from Celsius to target unit
+    switch (to) {
+      case 'Celsius':
+        return celsius;
+      case 'Fahrenheit':
+        return celsius * 9 / 5 + 32;
+      case 'Kelvin':
+        return celsius + 273.15;
+      default:
+        return value;
+    }
+  }
+
+  // Generic conversion interface for standard converters
+  Widget _buildConversionInterface({required String type}) {
+    // Get the appropriate units for this converter type
+    final List<String> units = conversionUnits[type] ?? [];
+
+    return Column(
+      children: [
+        // Input Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Input Value',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _expression.isEmpty ? '0' : _expression,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Unit Selectors
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
+              // From Unit Dropdown
+              Flexible(
+                flex: 4,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 140),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: fromUnit,
+                      dropdownColor: Colors.black87,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      isExpanded: true,
+                      itemHeight: 48,
+                      items: units.map((String unit) {
+                        return DropdownMenuItem<String>(
+                          value: unit,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(unit, overflow: TextOverflow.ellipsis),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            fromUnit = newValue;
+                            _performConversion();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Swap Button
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Material(
+                  color: Colors.amber.shade400,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      setState(() {
+                        String temp = fromUnit;
+                        fromUnit = toUnit;
+                        toUnit = temp;
+                        _performConversion();
+                      });
+                    },
+                    child: const Icon(Icons.swap_horiz,
+                        color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // To Unit Dropdown
+              Flexible(
+                flex: 4,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 140),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: toUnit,
+                      dropdownColor: Colors.black87,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      isExpanded: true,
+                      itemHeight: 48,
+                      items: units.map((String unit) {
+                        return DropdownMenuItem<String>(
+                          value: unit,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(unit, overflow: TextOverflow.ellipsis),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            toUnit = newValue;
+                            _performConversion();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Result Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.amber.shade400, Colors.orange.shade400],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.shade400.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Result',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  output,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$fromUnit → $toUnit',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Keypad
+        Expanded(
+          child: _buildConverterKeypad(onKeyTap: (val) {
+            setState(() {
+              if (val == 'C') {
+                _expression = '';
+                output = '0';
+              } else if (val == 'DEL') {
+                if (_expression.isNotEmpty) {
+                  _expression =
+                      _expression.substring(0, _expression.length - 1);
+                }
+                if (_expression.isEmpty) output = '0';
+              } else {
+                if (val == '.' && _expression.contains('.')) return;
+                _expression += val;
+              }
+              _performConversion();
+            });
+          }),
+        ),
+      ],
+    );
+  }
+
+  // Time converter UI
+  Widget _buildTimeConverter() {
+    final List<String> units = conversionUnits['Time'] ?? [];
+
+    return Column(
+      children: [
+        // Input Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Input Value',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _expression.isEmpty ? '0' : _expression,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Unit Selectors
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Row(
+            children: [
+              // From Unit Dropdown
+              Flexible(
+                flex: 4,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 140),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: fromUnit,
+                      dropdownColor: Colors.black87,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      isExpanded: true,
+                      itemHeight: 48,
+                      items: units.map((String unit) {
+                        return DropdownMenuItem<String>(
+                          value: unit,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(unit, overflow: TextOverflow.ellipsis),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            fromUnit = newValue;
+                            _performTimeConversion();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Swap Button
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Material(
+                  color: Colors.amber.shade400,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      setState(() {
+                        String temp = fromUnit;
+                        fromUnit = toUnit;
+                        toUnit = temp;
+                        _performTimeConversion();
+                      });
+                    },
+                    child: const Icon(Icons.swap_horiz,
+                        color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // To Unit Dropdown
+              Flexible(
+                flex: 4,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 140),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: toUnit,
+                      dropdownColor: Colors.black87,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      isExpanded: true,
+                      itemHeight: 48,
+                      items: units.map((String unit) {
+                        return DropdownMenuItem<String>(
+                          value: unit,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(unit, overflow: TextOverflow.ellipsis),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            toUnit = newValue;
+                            _performTimeConversion();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Result Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade400, Colors.blue.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.shade400.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Result',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  output,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$fromUnit → $toUnit',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Keypad
+        Expanded(
+          child: _buildConverterKeypad(onKeyTap: (val) {
+            setState(() {
+              if (val == 'C') {
+                _expression = '';
+                output = '0';
+              } else if (val == 'DEL') {
+                if (_expression.isNotEmpty) {
+                  _expression =
+                      _expression.substring(0, _expression.length - 1);
+                }
+                if (_expression.isEmpty) output = '0';
+              } else {
+                if (val == '.' && _expression.contains('.')) return;
+                _expression += val;
+              }
+              _performTimeConversion();
+            });
+          }),
+        ),
+      ],
+    );
+  }
+
+  // BMI calculator UI
+  Widget _buildBMICalculator() {
+    return Column(
+      children: [
+        // Weight Input Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Weight (kg)',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  weight == 0 ? '0' : weight.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Height Input Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Height (m)',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  height == 0 ? '0' : height.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // BMI Result Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green.shade400, Colors.green.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.shade400.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BMI Result',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatNumber(bmi),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  bmiCategory,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Keypad
+        Expanded(
+          child: _buildConverterKeypad(onKeyTap: (val) {
+            setState(() {
+              if (val == 'C') {
+                _expression = '';
+                weight = 0;
+                height = 0;
+                bmi = 0;
+                bmiCategory = '';
+                output = '0';
+              } else if (val == 'DEL') {
+                if (_expression.isNotEmpty) {
+                  _expression =
+                      _expression.substring(0, _expression.length - 1);
+                }
+                if (_expression.isEmpty) output = '0';
+              } else {
+                if (val == '.' && _expression.contains('.')) return;
+                _expression += val;
+              }
+              _calculateBMI(double.tryParse(_expression) ?? 0);
+            });
+          }),
+        ),
+      ],
+    );
+  }
+
+  // GST calculator UI
+  Widget _buildGSTCalculator() {
+    return Column(
+      children: [
+        // Base Price Input Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Base Price',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  basePrice == 0 ? '0' : basePrice.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // GST Percentage Input Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'GST Percentage',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  gstPercent == 0 ? '0' : gstPercent.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Results
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            children: [
+              // GST Amount
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(top: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.history, color: Colors.white),
-                    SizedBox(width: 8),
                     Text(
-                      'Calculation History',
+                      'GST Amount',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Spacer(),
-                    IconButton(
-                      icon: Icon(Icons.delete, color: Colors.white),
-                      onPressed: () {
-                        setState(() {
-                          calculationHistory.clear();
-                          Navigator.pop(context);
-                        });
-                      },
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatNumber(gstAmount),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Divider(color: Colors.white.withOpacity(0.3), height: 1),
-              calculationHistory.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Text(
-                        'No history yet',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    )
-                  : Flexible(
-                      child: Container(
-                        constraints: BoxConstraints(maxHeight: 300),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: calculationHistory.length,
-                          reverse: true,
-                          itemBuilder: (context, index) {
-                            final historyItem = calculationHistory[
-                                calculationHistory.length - 1 - index];
-                            return ListTile(
-                              title: Text(
-                                historyItem,
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(
-                                  Icons.replay,
-                                  color: Colors.white70,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  // Reuse the calculation
-                                  if (historyItem.contains('=')) {
-                                    final parts = historyItem.split('=');
-                                    if (parts.length == 2) {
-                                      setState(() {
-                                        output = parts[1].trim().split(' ')[0];
-                                      });
-                                    }
-                                  }
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            );
-                          },
-                        ),
+
+              // Total Price
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(top: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.purple.shade400, Colors.purple.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Price',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-              Divider(color: Colors.white.withOpacity(0.3), height: 1),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatNumber(totalPrice),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
 
-  void _showBirthdayCalculator() {
-    // Implementation of _showBirthdayCalculator method
-    // This method should show the birthday calculator
-    throw UnimplementedError();
-  }
-
-  Widget _buildDiscountCalculator() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Original Price',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                originalPrice = double.tryParse(val) ?? 0;
-                if (discountPercent > 0) {
-                  savedAmount = originalPrice * (discountPercent / 100);
-                  finalPrice = originalPrice - savedAmount;
+        // Keypad
+        Expanded(
+          child: _buildConverterKeypad(onKeyTap: (val) {
+            setState(() {
+              if (val == 'C') {
+                _expression = '';
+                basePrice = 0;
+                gstPercent = 18;
+                gstAmount = 0;
+                totalPrice = 0;
+                output = '0';
+              } else if (val == 'DEL') {
+                if (_expression.isNotEmpty) {
+                  _expression =
+                      _expression.substring(0, _expression.length - 1);
                 }
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Discount %',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                discountPercent = double.tryParse(val) ?? 0;
-                if (originalPrice > 0) {
-                  savedAmount = originalPrice * (discountPercent / 100);
-                  finalPrice = originalPrice - savedAmount;
-                }
-              });
-            },
-          ),
-          const SizedBox(height: 24),
-          if (finalPrice > 0) ...[
-            Container(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Final Price: \$${_formatNumber(finalPrice)}',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'You Save: \$${_formatNumber(savedAmount)}',
-                    style: TextStyle(color: Colors.green, fontSize: 18),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDateCalculator() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary.withOpacity(0.2),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: startDate ?? DateTime.now(),
-                  firstDate: DateTime(1900),
-                  lastDate: DateTime(2100),
-                );
-                if (date != null) {
-                  setState(() {
-                    startDate = date;
-                    if (endDate != null) {
-                      daysDifference = endDate!.difference(startDate!).inDays;
-                    }
-                  });
-                }
-              },
-              child: Text(
-                'Select Start Date: ${startDate?.toString().split(' ')[0] ?? 'Not selected'}',
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary.withOpacity(0.2),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: endDate ?? DateTime.now(),
-                  firstDate: DateTime(1900),
-                  lastDate: DateTime(2100),
-                );
-                if (date != null) {
-                  setState(() {
-                    endDate = date;
-                    if (startDate != null) {
-                      daysDifference = endDate!.difference(startDate!).inDays;
-                    }
-                  });
-                }
-              },
-              child: Text(
-                'Select End Date: ${endDate?.toString().split(' ')[0] ?? 'Not selected'}',
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (daysDifference != 0)
-            Container(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Text(
-                  'Days Difference: $daysDifference',
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNumeralSystemConverter() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Enter Decimal Number',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                decimalValue = val;
-                convertNumber(val);
-              });
-            },
-          ),
-          const SizedBox(height: 24),
-          if (binaryValue.isNotEmpty) ...[
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Binary: $binaryValue',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Octal: $octalValue',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Hex: $hexValue',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void convertNumber(String value) {
-    try {
-      int decimal = int.parse(value);
-      setState(() {
-        decimalValue = decimal.toString();
-        binaryValue = decimal.toRadixString(2);
-        octalValue = decimal.toRadixString(8);
-        hexValue = decimal.toRadixString(16).toUpperCase();
-      });
-    } catch (e) {
-      // Handle invalid input
-    }
-  }
-
-  Widget _buildBMICalculator() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Weight (kg)',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                weight = double.tryParse(val) ?? 0;
-                calculateBMI();
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Height (m)',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                height = double.tryParse(val) ?? 0;
-                calculateBMI();
-              });
-            },
-          ),
-          const SizedBox(height: 24),
-          if (bmi > 0) ...[
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'BMI: ${_formatNumber(bmi)}',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Category: $bmiCategory',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void calculateBMI() {
-    if (weight > 0 && height > 0) {
-      bmi = weight / (height * height);
-      if (bmi < 18.5)
-        bmiCategory = 'Underweight';
-      else if (bmi < 25)
-        bmiCategory = 'Normal weight';
-      else if (bmi < 30)
-        bmiCategory = 'Overweight';
-      else
-        bmiCategory = 'Obese';
-    }
-  }
-
-  Widget _buildGSTCalculator() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Base Price',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-            ),
-            onChanged: (val) {
-              setState(() {
-                basePrice = double.tryParse(val) ?? 0;
-                calculateGST();
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: DropdownButton<double>(
-              isExpanded: true,
-              dropdownColor: Colors.black87,
-              value: gstPercent,
-              items: [5.0, 12.0, 18.0, 28.0]
-                  .map(
-                    (rate) => DropdownMenuItem(
-                      value: rate,
-                      child: Text('GST Rate: $rate%'),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (val) {
-                setState(() {
-                  gstPercent = val!;
-                  calculateGST();
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (totalPrice > 0) ...[
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'GST Amount: \$${_formatNumber(gstAmount)}',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Total Price: \$${_formatNumber(totalPrice)}',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void calculateGST() {
-    gstAmount = basePrice * (gstPercent / 100);
-    totalPrice = basePrice + gstAmount;
-  }
-
-  void _showThemeMenu() {
-    final theme = Theme.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: theme.primaryColorDark.withOpacity(0.9),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                if (_expression.isEmpty) output = '0';
+              } else {
+                if (val == '.' && _expression.contains('.')) return;
+                _expression += val;
+              }
+              _calculateGST(double.tryParse(_expression) ?? 0);
+            });
+          }),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 5,
-              margin: EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Choose Theme',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Divider(color: Colors.white.withOpacity(0.1)),
-            _buildThemeOption(
-              'Blue Theme',
-              Colors.blue,
-              () => widget.switchTheme(AppThemes.blueTheme),
-            ),
-            _buildThemeOption(
-              'Purple Theme',
-              Colors.purple,
-              () => widget.switchTheme(AppThemes.purpleTheme),
-            ),
-            _buildThemeOption(
-              'Green Theme',
-              Colors.green,
-              () => widget.switchTheme(AppThemes.greenTheme),
-            ),
-            _buildThemeOption(
-              'Dark Theme',
-              Colors.grey[800]!,
-              () => widget.switchTheme(AppThemes.darkTheme),
-            ),
-            SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThemeOption(String name, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: () {
-        onTap();
-        Navigator.pop(context);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            SizedBox(width: 16),
-            Text(name, style: TextStyle(color: Colors.white, fontSize: 16)),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

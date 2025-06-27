@@ -368,11 +368,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   child: Row(
                     children: [
                       Text(
-                        isConversionMode
-                            ? "Calculator"
-                            : isScientificMode
-                                ? "Calculator"
-                                : "Calculator",
+                        "Calculator",
                         style: TextStyle(
                           fontFamily: fontFamily,
                           fontSize: 28,
@@ -382,10 +378,12 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         ),
                       ),
                       const Spacer(),
-                      // Top navigation icons
+                      // Top navigation icons (only 4: history, birthday, calc/scientific, converter)
                       _buildTopNavIcon(Icons.history, () {
-                        // Show history
                         _showHistoryDialog();
+                      }),
+                      _buildTopNavIcon(Icons.cake, () {
+                        _showBirthdayCalculator();
                       }),
                       _buildTopNavIcon(Icons.science, () {
                         setState(() {
@@ -394,18 +392,6 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         });
                       }, isActive: isScientificMode),
                       _buildTopNavIcon(Icons.swap_horiz, () {
-                        // Toggle between units
-                        if (isConversionMode) {
-                          final temp = fromUnit;
-                          setState(() {
-                            fromUnit = toUnit;
-                            toUnit = temp;
-                            _performConversion();
-                          });
-                        }
-                      }),
-                      _buildTopNavIcon(Icons.science_outlined, () {
-                        // Toggle conversion mode
                         setState(() {
                           isConversionMode = !isConversionMode;
                           if (isConversionMode) {
@@ -426,89 +412,82 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                           }
                         });
                       }, isActive: isConversionMode),
-                      _buildTopNavIcon(Icons.grid_view, () {
-                        // Show more options
-                        _showThemeMenu();
-                      }),
                     ],
                   ),
                 ),
 
-                // Converter category bar (only visible in conversion mode)
-                if (isConversionMode) ...[
-                  const SizedBox(height: 8),
-                  buildEssentialCategoryToggleBar(),
-                  const SizedBox(height: 12),
-                ],
+                // Converter category bar (always visible)
+                const SizedBox(height: 8),
+                buildEssentialCategoryToggleBar(),
+                const SizedBox(height: 12),
 
                 // Main content
-                if (isConversionMode)
-                  Expanded(child: _buildSelectedConverter())
-                else
-                  Expanded(
-                    child: Column(
-                      children: [
-                        // Calculator Display
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              // Expression display
-                              if (expression.isNotEmpty)
-                                Text(
-                                  expression,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 18,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              const SizedBox(height: 8),
-                              // Current output display
-                              Text(
-                                output,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
-                                ),
-                                textAlign: TextAlign.right,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                Expanded(
+                  child: isConversionMode
+                      ? _buildSelectedConverter()
+                      : Column(
+                          children: [
+                            // Calculator Display
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                            ],
-                          ),
-                        ),
-
-                        // Keypad
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                              vertical: 4.0,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  // Expression display
+                                  if (expression.isNotEmpty)
+                                    Text(
+                                      expression,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.7),
+                                        fontSize: 18,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  const SizedBox(height: 8),
+                                  // Current output display
+                                  Text(
+                                    output,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 48,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: isScientificMode
-                                ? _buildScientificKeypad()
-                                : _buildColorfulKeypad(),
-                          ),
+
+                            // Keypad
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                  vertical: 4.0,
+                                ),
+                                child: isScientificMode
+                                    ? _buildScientificKeypad()
+                                    : _buildColorfulKeypad(),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                ),
               ],
             ),
           ),
@@ -598,42 +577,93 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   Widget _buildColorfulKeypad() {
-    final List<Map<String, dynamic>> buttons = [
-      {'text': 'C', 'color': Colors.red.shade400},
-      {'text': 'DEL', 'color': Colors.red.shade400},
-      {'text': '/', 'color': Colors.amber.shade400},
-      {'text': '7', 'color': Colors.deepPurple.shade400},
-      {'text': '8', 'color': Colors.blue.shade400},
-      {'text': '9', 'color': Colors.teal.shade400},
-      {'text': '*', 'color': Colors.amber.shade400},
-      {'text': '4', 'color': Colors.green.shade400},
-      {'text': '5', 'color': Colors.indigo.shade400},
-      {'text': '6', 'color': Colors.pink.shade400},
-      {'text': '-', 'color': Colors.amber.shade400},
-      {'text': '1', 'color': Colors.deepOrange.shade400},
-      {'text': '2', 'color': Colors.lightGreen.shade400},
-      {'text': '3', 'color': Colors.cyan.shade400},
-      {'text': '+', 'color': Colors.amber.shade400},
-      {'text': '.', 'color': Colors.grey.shade700},
-      {'text': '0', 'color': Colors.amber.shade300},
-      {'text': '=', 'color': Colors.deepPurple.shade500},
-    ];
+    return Column(
+      children: [
+        // Row 1: Clear, Delete, Percentage, Divide
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _buildColorfulButton('C', Colors.red.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('DEL', Colors.red.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('%', Colors.amber.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('/', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
 
-    return GridView.builder(
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 1.0,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: buttons.length,
-      itemBuilder: (context, index) {
-        return _buildColorfulButton(
-          buttons[index]['text'],
-          buttons[index]['color'],
-        );
-      },
+        // Row 2: 7, 8, 9, Multiply
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildColorfulButton('7', Colors.deepPurple.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('8', Colors.blue.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('9', Colors.teal.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('*', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+
+        // Row 3: 4, 5, 6, Minus
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _buildColorfulButton('4', Colors.green.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildColorfulButton('5', Colors.indigo.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('6', Colors.pink.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('-', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+
+        // Row 4: 1, 2, 3, Plus
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildColorfulButton('1', Colors.deepOrange.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildColorfulButton('2', Colors.lightGreen.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('3', Colors.cyan.shade400)),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('+', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+
+        // Row 5: 0 (spans 2 columns), Decimal, Equals
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: _buildColorfulButton('0', Colors.amber.shade300),
+              ),
+              SizedBox(width: 8),
+              Expanded(child: _buildColorfulButton('.', Colors.grey.shade700)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildColorfulButton('=', Colors.deepPurple.shade500)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -670,6 +700,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       _delete();
     } else if (button == '=') {
       _calculate();
+    } else if (button == '%') {
+      _calculatePercentage();
     } else {
       _append(button);
     }
@@ -717,6 +749,17 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     }
   }
 
+  void _calculatePercentage() {
+    try {
+      double value = double.parse(output);
+      double percentage = value / 100;
+      output = _formatNumber(percentage);
+      calculationHistory.add('$value% = $output');
+    } catch (e) {
+      output = 'Error';
+    }
+  }
+
   void _append(String button) {
     if (output == '0') {
       output = button;
@@ -726,39 +769,197 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   Widget _buildScientificKeypad() {
-    final List<Map<String, dynamic>> buttons = [
-      {'text': 'sin', 'color': Colors.blueGrey.shade400},
-      {'text': 'cos', 'color': Colors.blueGrey.shade400},
-      {'text': 'tan', 'color': Colors.blueGrey.shade400},
-      {'text': 'π', 'color': Colors.purple.shade400},
-      {'text': 'e', 'color': Colors.purple.shade400},
-      {'text': 'x²', 'color': Colors.teal.shade400},
-      {'text': '√', 'color': Colors.teal.shade400},
-      {'text': 'ln', 'color': Colors.blueGrey.shade400},
-      {'text': 'log', 'color': Colors.blueGrey.shade400},
-      {'text': '10^x', 'color': Colors.teal.shade400},
-      {'text': 'e^x', 'color': Colors.teal.shade400},
-      {'text': 'x!', 'color': Colors.purple.shade400},
-      {'text': 'C', 'color': Colors.red.shade400},
-      {'text': 'DEL', 'color': Colors.red.shade400},
-      {'text': '=', 'color': Colors.deepPurple.shade500},
-    ];
-
-    return GridView.builder(
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        childAspectRatio: 1.0,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: buttons.length,
-      itemBuilder: (context, index) {
-        return _buildScientificColorfulButton(
-          buttons[index]['text'],
-          buttons[index]['color'],
-        );
-      },
+    // Use the same color scheme as the normal calculator
+    return Column(
+      children: [
+        // Row 1: √, π, ^, !
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '√', Colors.teal.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'π', Colors.purple.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '^', Colors.amber.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '!', Colors.purple.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 2: DEG, sin, cos, tan
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'DEG', Colors.grey.shade700)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'sin', Colors.blueGrey.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'cos', Colors.blueGrey.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'tan', Colors.blueGrey.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 3: INV, e, ln, log
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'INV', Colors.grey.shade700)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'e', Colors.purple.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'ln', Colors.blueGrey.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'log', Colors.blueGrey.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 4: AC, (, ), %, ÷
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      'AC', Colors.red.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '(', Colors.grey.shade700)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      ')', Colors.grey.shade700)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '%', Colors.amber.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '÷', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 5: 7, 8, 9, ×
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '7', Colors.deepPurple.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '8', Colors.blue.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '9', Colors.teal.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '×', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 6: 4, 5, 6, −
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '4', Colors.green.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '5', Colors.indigo.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '6', Colors.pink.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '−', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 7: 1, 2, 3, +
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '1', Colors.deepOrange.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '2', Colors.lightGreen.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '3', Colors.cyan.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '+', Colors.amber.shade400)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Row 8: 0, ., ⌫, =
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '0', Colors.amber.shade300)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '.', Colors.grey.shade700)),
+              SizedBox(width: 8),
+              Expanded(
+                  child:
+                      _buildScientificColorfulButton('⌫', Colors.red.shade400)),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _buildScientificColorfulButton(
+                      '=', Colors.deepPurple.shade500)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

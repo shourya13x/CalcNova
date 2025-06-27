@@ -42,48 +42,48 @@ class AppThemes {
     useMaterial3: true,
     fontFamily: 'Poppins',
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0288D1),
+      seedColor: const Color(0xFF667eea),
       brightness: Brightness.dark,
     ),
-    primaryColor: const Color(0xFF00BCD4),
-    primaryColorDark: const Color(0xFF0288D1),
-    scaffoldBackgroundColor: Colors.black,
+    primaryColor: const Color(0xFF667eea),
+    primaryColorDark: const Color(0xFF764ba2),
+    scaffoldBackgroundColor: Colors.transparent,
   );
 
   static final purpleTheme = ThemeData(
     useMaterial3: true,
     fontFamily: 'Poppins',
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6A00FF),
+      seedColor: const Color(0xFF764ba2),
       brightness: Brightness.dark,
     ),
-    primaryColor: const Color(0xFF9C27B0),
-    primaryColorDark: const Color(0xFF6A00FF),
-    scaffoldBackgroundColor: Colors.black,
+    primaryColor: const Color(0xFF764ba2),
+    primaryColorDark: const Color(0xFFf093fb),
+    scaffoldBackgroundColor: Colors.transparent,
   );
 
   static final greenTheme = ThemeData(
     useMaterial3: true,
     fontFamily: 'Poppins',
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF00C853),
+      seedColor: const Color(0xFFf093fb),
       brightness: Brightness.dark,
     ),
-    primaryColor: const Color(0xFF00C853),
-    primaryColorDark: const Color(0xFF009624),
-    scaffoldBackgroundColor: Colors.black,
+    primaryColor: const Color(0xFFf093fb),
+    primaryColorDark: const Color(0xFFf5576c),
+    scaffoldBackgroundColor: Colors.transparent,
   );
 
   static final darkTheme = ThemeData(
     useMaterial3: true,
     fontFamily: 'Poppins',
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF212121),
+      seedColor: const Color(0xFFf5576c),
       brightness: Brightness.dark,
     ),
-    primaryColor: const Color(0xFF424242),
-    primaryColorDark: const Color(0xFF212121),
-    scaffoldBackgroundColor: Colors.black,
+    primaryColor: const Color(0xFFf5576c),
+    primaryColorDark: const Color(0xFF667eea),
+    scaffoldBackgroundColor: Colors.transparent,
   );
 }
 
@@ -472,7 +472,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   child: Row(
                     children: [
                       Text(
-                        "Calculator",
+                        "CalcNova",
                         style: TextStyle(
                           fontFamily: fontFamily,
                           fontSize: 28,
@@ -3800,21 +3800,25 @@ class _AnimatedBackgroundState extends State<_AnimatedBackground>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Stack(
       children: [
+        // Beautiful gradient background
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: [
-                theme.primaryColor, // Use theme primary color
-                theme.primaryColorDark, // Use theme primary dark color
+                const Color(0xFF667eea), // Beautiful blue-purple
+                const Color(0xFF764ba2), // Deep purple
+                const Color(0xFFf093fb), // Soft pink
+                const Color(0xFFf5576c), // Coral red
               ],
+              stops: const [0.0, 0.25, 0.75, 1.0],
             ),
           ),
         ),
+        // Animated overlay with subtle pattern
         Positioned.fill(
           child: IgnorePointer(
             child: CustomPaint(painter: _ParticlePainter(_controller)),
@@ -3831,17 +3835,33 @@ class _ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.10);
-    final int particleCount = 18;
+    final paint = Paint()..color = Colors.white.withOpacity(0.08);
+    final int particleCount = 24;
     final double time = animation.value * 2 * 3.1415;
+
     for (int i = 0; i < particleCount; i++) {
-      final double angle = (i / particleCount) * 2 * 3.1415 + time;
-      final double radius = size.shortestSide * 0.38 + 18 * (i % 3);
+      final double angle = (i / particleCount) * 2 * 3.1415 + time * 0.5;
+      final double radius = size.shortestSide * 0.25 + 25 * (i % 4);
       final double x = size.width / 2 +
-          radius * math.cos(angle + time * (i % 2 == 0 ? 1 : -1));
+          radius * math.cos(angle + time * (i % 3 == 0 ? 0.3 : -0.2));
       final double y = size.height / 2 +
-          radius * math.sin(angle + time * (i % 2 == 0 ? 1 : -1));
-      canvas.drawCircle(Offset(x, y), 8 + (i % 3) * 2.5, paint);
+          radius * math.sin(angle + time * (i % 3 == 0 ? 0.3 : -0.2));
+
+      // Vary particle sizes for more natural look
+      final double particleSize = 4 + (i % 3) * 1.5;
+      canvas.drawCircle(Offset(x, y), particleSize, paint);
+    }
+
+    // Add some floating particles
+    for (int i = 0; i < 8; i++) {
+      final double x =
+          (size.width * 0.2) + (size.width * 0.6 * ((i + time * 0.1) % 1));
+      final double y =
+          (size.height * 0.3) + (size.height * 0.4 * math.sin(time + i));
+      final double particleSize = 2 + math.sin(time * 2 + i) * 1;
+
+      final floatingPaint = Paint()..color = Colors.white.withOpacity(0.05);
+      canvas.drawCircle(Offset(x, y), particleSize, floatingPaint);
     }
   }
 

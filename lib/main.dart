@@ -3,33 +3,93 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const CalculatorAPP());
 }
 
-class CalculatorAPP extends StatelessWidget {
+class CalculatorAPP extends StatefulWidget {
   const CalculatorAPP({super.key});
+
+  @override
+  State<CalculatorAPP> createState() => _CalculatorAPPState();
+}
+
+class _CalculatorAPPState extends State<CalculatorAPP> {
+  ThemeData _currentTheme = AppThemes.blueTheme;
+
+  void switchTheme(ThemeData newTheme) {
+    setState(() {
+      _currentTheme = newTheme;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Poppins',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6A00FF), // Vibrant purple
-          brightness: Brightness.dark,
-        ),
-      ),
-      home: const CalculatorScreen(),
+      theme: _currentTheme,
+      home: CalculatorScreen(switchTheme: switchTheme),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
+// Theme data
+class AppThemes {
+  static final blueTheme = ThemeData(
+    useMaterial3: true,
+    fontFamily: 'Poppins',
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF0288D1),
+      brightness: Brightness.dark,
+    ),
+    primaryColor: const Color(0xFF00BCD4),
+    primaryColorDark: const Color(0xFF0288D1),
+    scaffoldBackgroundColor: Colors.black,
+  );
+
+  static final purpleTheme = ThemeData(
+    useMaterial3: true,
+    fontFamily: 'Poppins',
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF6A00FF),
+      brightness: Brightness.dark,
+    ),
+    primaryColor: const Color(0xFF9C27B0),
+    primaryColorDark: const Color(0xFF6A00FF),
+    scaffoldBackgroundColor: Colors.black,
+  );
+
+  static final greenTheme = ThemeData(
+    useMaterial3: true,
+    fontFamily: 'Poppins',
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF00C853),
+      brightness: Brightness.dark,
+    ),
+    primaryColor: const Color(0xFF00C853),
+    primaryColorDark: const Color(0xFF009624),
+    scaffoldBackgroundColor: Colors.black,
+  );
+
+  static final darkTheme = ThemeData(
+    useMaterial3: true,
+    fontFamily: 'Poppins',
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF212121),
+      brightness: Brightness.dark,
+    ),
+    primaryColor: const Color(0xFF424242),
+    primaryColorDark: const Color(0xFF212121),
+    scaffoldBackgroundColor: Colors.black,
+  );
+}
+
 class CalculatorScreen extends StatefulWidget {
-  const CalculatorScreen({super.key});
+  final Function(ThemeData) switchTheme;
+
+  const CalculatorScreen({super.key, required this.switchTheme});
 
   @override
   State<CalculatorScreen> createState() => _CalculatorScreenState();
@@ -311,8 +371,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         isConversionMode
                             ? "Calculator"
                             : isScientificMode
-                            ? "Calculator"
-                            : "Calculator",
+                                ? "Calculator"
+                                : "Calculator",
                         style: TextStyle(
                           fontFamily: fontFamily,
                           fontSize: 28,
@@ -368,6 +428,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       }, isActive: isConversionMode),
                       _buildTopNavIcon(Icons.grid_view, () {
                         // Show more options
+                        _showThemeMenu();
                       }),
                     ],
                   ),
@@ -522,9 +583,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                     category['label'],
                     style: TextStyle(
                       color: Colors.white,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                       fontSize: 14,
                     ),
                   ),
@@ -729,37 +789,90 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   void _handleScientificButtonPress(String button) {
-    if (button == 'sin') {
-      output = math.sin(double.parse(output) * math.pi / 180).toString();
-    } else if (button == 'cos') {
-      output = math.cos(double.parse(output) * math.pi / 180).toString();
-    } else if (button == 'tan') {
-      output = math.tan(double.parse(output) * math.pi / 180).toString();
-    } else if (button == 'π') {
-      output = math.pi.toString();
-    } else if (button == 'e') {
-      output = math.e.toString();
-    } else if (button == 'x²') {
-      output = (double.parse(output) * double.parse(output)).toString();
-    } else if (button == '√') {
-      output = math.sqrt(double.parse(output)).toString();
-    } else if (button == 'ln') {
-      output = math.log(double.parse(output)).toString();
-    } else if (button == 'log') {
-      output = (math.log(double.parse(output)) / math.ln10).toString();
-    } else if (button == '10^x') {
-      output = (math.pow(10, double.parse(output))).toString();
-    } else if (button == 'e^x') {
-      output = math.exp(double.parse(output)).toString();
-    } else if (button == 'x!') {
-      output = _factorial(int.parse(output)).toString();
-    } else if (button == 'C') {
-      _clear();
-    } else if (button == 'DEL') {
-      _delete();
-    } else if (button == '=') {
-      _calculate();
+    double result = 0;
+    String operation = '';
+    double inputValue = 0;
+
+    try {
+      inputValue = double.parse(output);
+    } catch (e) {
+      setState(() {
+        output = 'Error';
+      });
+      return;
     }
+
+    switch (button) {
+      case 'sin':
+        operation = 'sin($inputValue°)';
+        result = math.sin(inputValue * math.pi / 180);
+        break;
+      case 'cos':
+        operation = 'cos($inputValue°)';
+        result = math.cos(inputValue * math.pi / 180);
+        break;
+      case 'tan':
+        operation = 'tan($inputValue°)';
+        result = math.tan(inputValue * math.pi / 180);
+        break;
+      case 'π':
+        operation = 'π';
+        result = math.pi;
+        break;
+      case 'e':
+        operation = 'e';
+        result = math.e;
+        break;
+      case 'x²':
+        operation = '$inputValue²';
+        result = inputValue * inputValue;
+        break;
+      case '√':
+        operation = '√$inputValue';
+        result = math.sqrt(inputValue);
+        break;
+      case 'ln':
+        operation = 'ln($inputValue)';
+        result = math.log(inputValue);
+        break;
+      case 'log':
+        operation = 'log($inputValue)';
+        result = math.log(inputValue) / math.ln10;
+        break;
+      case '10^x':
+        operation = '10^$inputValue';
+        result = math.pow(10, inputValue).toDouble();
+        break;
+      case 'e^x':
+        operation = 'e^$inputValue';
+        result = math.exp(inputValue);
+        break;
+      case 'x!':
+        if (inputValue < 0 || inputValue != inputValue.floor()) {
+          setState(() {
+            output = 'Error';
+          });
+          return;
+        }
+        operation = '$inputValue!';
+        result = _factorial(inputValue.toInt());
+        break;
+      case 'C':
+        _clear();
+        return;
+      case 'DEL':
+        _delete();
+        return;
+      case '=':
+        _calculate();
+        return;
+    }
+
+    setState(() {
+      output = _formatNumber(result);
+      // Add to history
+      calculationHistory.add('$operation = $output');
+    });
   }
 
   double _factorial(int n) {
@@ -951,7 +1064,122 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   void _showHistoryDialog() {
     // Implementation of _showHistoryDialog method
     // This method should show the history dialog
-    throw UnimplementedError();
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF0288D1).withOpacity(0.9),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.history, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'Calculation History',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.white),
+                      onPressed: () {
+                        setState(() {
+                          calculationHistory.clear();
+                          Navigator.pop(context);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Divider(color: Colors.white.withOpacity(0.3), height: 1),
+              calculationHistory.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Text(
+                        'No history yet',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    )
+                  : Flexible(
+                      child: Container(
+                        constraints: BoxConstraints(maxHeight: 300),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: calculationHistory.length,
+                          reverse: true,
+                          itemBuilder: (context, index) {
+                            final historyItem = calculationHistory[
+                                calculationHistory.length - 1 - index];
+                            return ListTile(
+                              title: Text(
+                                historyItem,
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              trailing: IconButton(
+                                icon: Icon(
+                                  Icons.replay,
+                                  color: Colors.white70,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  // Reuse the calculation
+                                  if (historyItem.contains('=')) {
+                                    final parts = historyItem.split('=');
+                                    if (parts.length == 2) {
+                                      setState(() {
+                                        output = parts[1].trim().split(' ')[0];
+                                      });
+                                    }
+                                  }
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+              Divider(color: Colors.white.withOpacity(0.3), height: 1),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showBirthdayCalculator() {
@@ -1374,6 +1602,94 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     gstAmount = basePrice * (gstPercent / 100);
     totalPrice = basePrice + gstAmount;
   }
+
+  void _showThemeMenu() {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: theme.primaryColorDark.withOpacity(0.9),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 5,
+              margin: EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Choose Theme',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Divider(color: Colors.white.withOpacity(0.1)),
+            _buildThemeOption(
+              'Blue Theme',
+              Colors.blue,
+              () => widget.switchTheme(AppThemes.blueTheme),
+            ),
+            _buildThemeOption(
+              'Purple Theme',
+              Colors.purple,
+              () => widget.switchTheme(AppThemes.purpleTheme),
+            ),
+            _buildThemeOption(
+              'Green Theme',
+              Colors.green,
+              () => widget.switchTheme(AppThemes.greenTheme),
+            ),
+            _buildThemeOption(
+              'Dark Theme',
+              Colors.grey[800]!,
+              () => widget.switchTheme(AppThemes.darkTheme),
+            ),
+            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(String name, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: () {
+        onTap();
+        Navigator.pop(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            SizedBox(width: 16),
+            Text(name, style: TextStyle(color: Colors.white, fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // Animated button with shadow and scale effect
@@ -1454,9 +1770,8 @@ class _AnimatedButtonState extends State<_AnimatedButton>
               widget.text,
               style: TextStyle(
                 fontSize: widget.fontSize,
-                fontWeight: widget.text == '='
-                    ? FontWeight.w700
-                    : FontWeight.w600,
+                fontWeight:
+                    widget.text == '=' ? FontWeight.w700 : FontWeight.w600,
                 color: widget.textColor,
                 letterSpacing: 0.5,
                 shadows: [
@@ -1502,6 +1817,7 @@ class _AnimatedBackgroundState extends State<_AnimatedBackground>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Stack(
       children: [
         Container(
@@ -1510,8 +1826,8 @@ class _AnimatedBackgroundState extends State<_AnimatedBackground>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color(0xFF00BCD4), // Turquoise top
-                Color(0xFF0288D1), // Blue bottom
+                theme.primaryColor, // Use theme primary color
+                theme.primaryColorDark, // Use theme primary dark color
               ],
             ),
           ),
@@ -1538,11 +1854,9 @@ class _ParticlePainter extends CustomPainter {
     for (int i = 0; i < particleCount; i++) {
       final double angle = (i / particleCount) * 2 * 3.1415 + time;
       final double radius = size.shortestSide * 0.38 + 18 * (i % 3);
-      final double x =
-          size.width / 2 +
+      final double x = size.width / 2 +
           radius * math.cos(angle + time * (i % 2 == 0 ? 1 : -1));
-      final double y =
-          size.height / 2 +
+      final double y = size.height / 2 +
           radius * math.sin(angle + time * (i % 2 == 0 ? 1 : -1));
       canvas.drawCircle(Offset(x, y), 8 + (i % 3) * 2.5, paint);
     }

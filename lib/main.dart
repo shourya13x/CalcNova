@@ -1257,13 +1257,13 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           _calculateDiscount(inputValue);
           return;
         case 'Date':
-          _calculateDateDifference(inputValue);
+          _calculateDateDifference();
           return;
         case 'Numeral':
-          _convertNumeralSystem(inputValue);
+          _convertNumeralSystem();
           return;
         case 'BMI':
-          _calculateBMI(inputValue);
+          _calculateBMI();
           return;
         case 'GST':
           _calculateGST(inputValue);
@@ -1489,20 +1489,431 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  // Show birthday calculator dialog (stub)
-  void _showBirthdayCalculator() {
-    showDialog(
+  // Show birthday calculator modal (full implementation)
+  void _showBirthdayCalculator() async {
+    DateTime? birthday = selectedDate;
+    final now = DateTime.now();
+
+    // Helper: Calculate age in years, months, days
+    Map<String, int> _calculateAge(DateTime birth, DateTime today) {
+      int years = today.year - birth.year;
+      int months = today.month - birth.month;
+      int days = today.day - birth.day;
+      if (days < 0) {
+        months--;
+        final prevMonth = DateTime(today.year, today.month, 0);
+        days += prevMonth.day;
+      }
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      return {'years': years, 'months': months, 'days': days};
+    }
+
+    // Helper: Next birthday
+    DateTime _nextBirthday(DateTime birth, DateTime today) {
+      DateTime next = DateTime(today.year, birth.month, birth.day);
+      if (next.isBefore(today) || next.isAtSameMomentAs(today)) {
+        next = DateTime(today.year + 1, birth.month, birth.day);
+      }
+      return next;
+    }
+
+    // Helper: Day of week
+    String _weekdayName(DateTime date) {
+      const days = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+      ];
+      return days[date.weekday - 1];
+    }
+
+    // Helper: Total lived
+    Map<String, int> _totalLived(DateTime birth, DateTime today) {
+      final days = today.difference(birth).inDays;
+      final weeks = days ~/ 7;
+      final months =
+          ((today.year - birth.year) * 12 + today.month - birth.month) -
+              (today.day < birth.day ? 1 : 0);
+      return {'days': days, 'weeks': weeks, 'months': months};
+    }
+
+    await showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Birthday Calculator'),
-        content: Text('Birthday calculator UI goes here.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            // Use birthday or default
+            final DateTime effectiveBirthday =
+                birthday ?? DateTime(now.year - 18, now.month, now.day);
+            final age = _calculateAge(effectiveBirthday, now);
+            final nextBday = _nextBirthday(effectiveBirthday, now);
+            final daysToNext = nextBday.difference(now).inDays;
+            final lived = _totalLived(effectiveBirthday, now);
+            final weekday = _weekdayName(effectiveBirthday);
+            final nextBdayWeekday = _weekdayName(nextBday);
+
+            // Fun facts calculations
+            final totalDays = lived['days'] ?? 0;
+            final totalYears = age['years'] ?? 0;
+            final heartBeats = totalDays * 24 * 60 * 70; // 70 bpm
+            final breaths = totalDays * 24 * 60 * 16; // 16 breaths/min
+            final hoursSlept = totalDays * 8;
+            final distanceSun = (totalYears * 940000000).toDouble(); // km
+            final fullMoons = (totalDays / 29.53).floor();
+
+            String formatBigInt(int n) {
+              if (n >= 1000000000)
+                return (n / 1000000000).toStringAsFixed(2) + 'B';
+              if (n >= 1000000) return (n / 1000000).toStringAsFixed(2) + 'M';
+              if (n >= 1000) return (n / 1000).toStringAsFixed(2) + 'K';
+              return n.toString();
+            }
+
+            String formatBigDouble(double n) {
+              if (n >= 1e9) return (n / 1e9).toStringAsFixed(2) + 'B km';
+              if (n >= 1e6) return (n / 1e6).toStringAsFixed(2) + 'M km';
+              if (n >= 1e3) return (n / 1e3).toStringAsFixed(2) + 'K km';
+              return n.toStringAsFixed(0) + ' km';
+            }
+
+            // Zodiac sign helper
+            Map<String, dynamic>? getZodiac(DateTime date) {
+              final month = date.month;
+              final day = date.day;
+              // List of zodiac signs with their date ranges and icons
+              final zodiacs = [
+                {
+                  'name': 'Capricorn',
+                  'icon': Icons.terrain,
+                  'start': [12, 22],
+                  'end': [1, 19]
+                },
+                {
+                  'name': 'Aquarius',
+                  'icon': Icons.water,
+                  'start': [1, 20],
+                  'end': [2, 18]
+                },
+                {
+                  'name': 'Pisces',
+                  'icon': Icons.pool,
+                  'start': [2, 19],
+                  'end': [3, 20]
+                },
+                {
+                  'name': 'Aries',
+                  'icon': Icons.whatshot,
+                  'start': [3, 21],
+                  'end': [4, 19]
+                },
+                {
+                  'name': 'Taurus',
+                  'icon': Icons.spa,
+                  'start': [4, 20],
+                  'end': [5, 20]
+                },
+                {
+                  'name': 'Gemini',
+                  'icon': Icons.wb_twighlight,
+                  'start': [5, 21],
+                  'end': [6, 20]
+                },
+                {
+                  'name': 'Cancer',
+                  'icon': Icons.brightness_3,
+                  'start': [6, 21],
+                  'end': [7, 22]
+                },
+                {
+                  'name': 'Leo',
+                  'icon': Icons.wb_sunny,
+                  'start': [7, 23],
+                  'end': [8, 22]
+                },
+                {
+                  'name': 'Virgo',
+                  'icon': Icons.grass,
+                  'start': [8, 23],
+                  'end': [9, 22]
+                },
+                {
+                  'name': 'Libra',
+                  'icon': Icons.balance,
+                  'start': [9, 23],
+                  'end': [10, 22]
+                },
+                {
+                  'name': 'Scorpio',
+                  'icon': Icons.bug_report,
+                  'start': [10, 23],
+                  'end': [11, 21]
+                },
+                {
+                  'name': 'Sagittarius',
+                  'icon': Icons.travel_explore,
+                  'start': [11, 22],
+                  'end': [12, 21]
+                },
+              ];
+              for (final zRaw in zodiacs) {
+                final z = zRaw as Map<String, dynamic>;
+                final startMonth = z['start'][0], startDay = z['start'][1];
+                final endMonth = z['end'][0], endDay = z['end'][1];
+                if ((month == startMonth && day >= startDay) ||
+                    (month == endMonth && day <= endDay) ||
+                    (startMonth > endMonth &&
+                        ((month == startMonth && day >= startDay) ||
+                            (month == endMonth && day <= endDay)))) {
+                  return z;
+                }
+              }
+              return zodiacs[0]; // fallback
+            }
+
+            final zodiac = (() {
+              final z = getZodiac(effectiveBirthday);
+              if (z != null && z['icon'] != null && z['name'] != null) return z;
+              return {'name': 'Capricorn', 'icon': Icons.terrain};
+            })();
+            final IconData zodiacIcon = zodiac['icon'] as IconData;
+            final String zodiacName = zodiac['name'] as String;
+
+            return Container(
+              padding: EdgeInsets.only(
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 16,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.cake,
+                                color: Colors.amber.shade400, size: 28),
+                            SizedBox(width: 10),
+                            Text(
+                              'Birthday Calculator',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                            Spacer(),
+                            IconButton(
+                              icon: Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10),
+                        // Birthday picker
+                        GestureDetector(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: effectiveBirthday,
+                              firstDate: DateTime(1900),
+                              lastDate: now,
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.dark(
+                                      primary: Colors.amber.shade400,
+                                      onPrimary: Colors.white,
+                                      surface: Colors.black87,
+                                      onSurface: Colors.white,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setModalState(() {
+                                birthday = picked;
+                                selectedDate = picked;
+                              });
+                            }
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade800,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_today,
+                                    color: Colors.white, size: 20),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Birthday: ' +
+                                      '${effectiveBirthday.year.toString().padLeft(4, '0')}' +
+                                      '-${effectiveBirthday.month.toString().padLeft(2, '0')}' +
+                                      '-${effectiveBirthday.day.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 18),
+                        // Age
+                        _BirthdayInfoCard(
+                          icon: Icons.cake,
+                          title: 'Your Age',
+                          value:
+                              '${age['years']} years, ${age['months']} months, ${age['days']} days',
+                        ),
+                        SizedBox(height: 10),
+                        // Day of week
+                        _BirthdayInfoCard(
+                          icon: Icons.calendar_today,
+                          title: 'Day of the week',
+                          value: weekday,
+                        ),
+                        SizedBox(height: 10),
+                        // Next birthday
+                        _BirthdayInfoCard(
+                          icon: Icons.event,
+                          title: 'Next Birthday',
+                          value:
+                              '${nextBday.year}-${nextBday.month.toString().padLeft(2, '0')}-${nextBday.day.toString().padLeft(2, '0')}  ($daysToNext days left)',
+                        ),
+                        SizedBox(height: 10),
+                        // Total lived
+                        _BirthdayInfoCard(
+                          icon: Icons.timelapse,
+                          title: 'Total Lived',
+                          value:
+                              '${lived['days']} days, ${lived['weeks']} weeks, ${lived['months']} months',
+                        ),
+                        SizedBox(height: 10),
+                        // Fun facts
+                        _BirthdayInfoCard(
+                          icon: Icons.public,
+                          title: 'Earth Rotations',
+                          value: '$totalDays',
+                        ),
+                        SizedBox(height: 10),
+                        _BirthdayInfoCard(
+                          icon: Icons.favorite,
+                          title: 'Heartbeats',
+                          value: formatBigInt(heartBeats),
+                        ),
+                        SizedBox(height: 10),
+                        _BirthdayInfoCard(
+                          icon: Icons.air,
+                          title: 'Breaths Taken',
+                          value: formatBigInt(breaths),
+                        ),
+                        SizedBox(height: 10),
+                        _BirthdayInfoCard(
+                          icon: Icons.nights_stay,
+                          title: 'Hours Slept',
+                          value: formatBigInt(hoursSlept),
+                        ),
+                        SizedBox(height: 10),
+                        _BirthdayInfoCard(
+                          icon: Icons.brightness_2,
+                          title: 'Full Moons Seen',
+                          value: '$fullMoons',
+                        ),
+                        SizedBox(height: 10),
+                        // Zodiac sign card
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(bottom: 14, top: 10),
+                          padding: EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.purple.shade400,
+                                Colors.purple.shade700
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.purple.shade400.withOpacity(0.18),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(zodiacIcon, color: Colors.white, size: 28),
+                              SizedBox(width: 14),
+                              Text(
+                                zodiacName,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                              Spacer(),
+                              Text(
+                                'Zodiac',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1738,14 +2149,275 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  // Date calculator UI (stub)
+  // Date calculator UI - Complete implementation
   Widget _buildDateCalculator() {
-    return Center(child: Text('Date Calculator UI'));
+    return Column(
+      children: [
+        // Start Date Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Start Date',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: startDate ?? DateTime.now(),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime(2100),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: ColorScheme.dark(
+                              primary: Colors.amber.shade400,
+                              onPrimary: Colors.white,
+                              surface: Colors.black87,
+                              onSurface: Colors.white,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        startDate = picked;
+                        _calculateDateDifference();
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          startDate != null
+                              ? '${startDate!.day}/${startDate!.month}/${startDate!.year}'
+                              : 'Select Start Date',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // End Date Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'End Date',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: endDate ?? DateTime.now(),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime(2100),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: ColorScheme.dark(
+                              primary: Colors.amber.shade400,
+                              onPrimary: Colors.white,
+                              surface: Colors.black87,
+                              onSurface: Colors.white,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        endDate = picked;
+                        _calculateDateDifference();
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          endDate != null
+                              ? '${endDate!.day}/${endDate!.month}/${endDate!.year}'
+                              : 'Select End Date',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Result Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade400, Colors.blue.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.shade400.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Days Difference',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  daysDifference.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (startDate != null && endDate != null)
+                  Text(
+                    '${startDate!.day}/${startDate!.month}/${startDate!.year} to ${endDate!.day}/${endDate!.month}/${endDate!.year}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        // Clear Button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  startDate = null;
+                  endDate = null;
+                  daysDifference = 0;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade400,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                'Clear Dates',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const Spacer(),
+      ],
+    );
   }
 
   // Numeral system converter UI - Complete implementation
   Widget _buildNumeralSystemConverter() {
     final List<String> units = ['Decimal', 'Binary', 'Octal', 'Hexadecimal'];
+    // Ensure fromUnit and toUnit are always valid for numeral system
+    if (!units.contains(fromUnit)) fromUnit = units[0];
+    if (!units.contains(toUnit)) toUnit = units[1];
     return Column(
       children: [
         // Input Card
@@ -1821,7 +2493,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         if (newValue != null) {
                           setState(() {
                             fromUnit = newValue;
-                            _performConversion();
+                            _convertNumeralSystem();
                           });
                         }
                       },
@@ -1844,7 +2516,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         String temp = fromUnit;
                         fromUnit = toUnit;
                         toUnit = temp;
-                        _performConversion();
+                        _convertNumeralSystem();
                       });
                     },
                     child: const Icon(Icons.swap_horiz,
@@ -1885,7 +2557,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         if (newValue != null) {
                           setState(() {
                             toUnit = newValue;
-                            _performConversion();
+                            _convertNumeralSystem();
                           });
                         }
                       },
@@ -1957,19 +2629,20 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           child: _buildConverterKeypad(onKeyTap: (val) {
             setState(() {
               if (val == 'C') {
-                _expression = '';
+                inputValue = '';
                 output = '0';
               } else if (val == 'DEL') {
-                if (_expression.isNotEmpty) {
-                  _expression =
-                      _expression.substring(0, _expression.length - 1);
+                if (inputValue.isNotEmpty) {
+                  inputValue = inputValue.substring(0, inputValue.length - 1);
                 }
-                if (_expression.isEmpty) output = '0';
+                if (inputValue.isEmpty) output = '0';
               } else {
-                if (val == '.' && _expression.contains('.')) return;
-                _expression += val;
+                // Validate input based on numeral system
+                if (_isValidInput(val, fromUnit)) {
+                  inputValue += val;
+                }
               }
-              _performConversion();
+              _convertNumeralSystem();
             });
           }),
         ),
@@ -1977,44 +2650,171 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  // Date difference calculation logic (stub)
-  void _calculateDateDifference(double value) {
-    setState(() {
-      output = 'Date difference result';
-    });
+  // Helper method to validate input based on numeral system
+  bool _isValidInput(String val, String system) {
+    if (val == '.') return false; // No decimals in numeral systems
+
+    switch (system) {
+      case 'Binary':
+        return val == '0' || val == '1';
+      case 'Octal':
+        return int.tryParse(val) != null && int.parse(val) < 8;
+      case 'Decimal':
+        return int.tryParse(val) != null;
+      case 'Hexadecimal':
+        return RegExp(r'^[0-9A-Fa-f]$').hasMatch(val);
+      default:
+        return true;
+    }
   }
 
-  // Numeral system conversion logic (stub)
-  void _convertNumeralSystem(double value) {
-    setState(() {
-      output = 'Numeral system result';
-    });
+  // Date difference calculation logic - Complete implementation
+  void _calculateDateDifference() {
+    if (startDate != null && endDate != null) {
+      final difference = endDate!.difference(startDate!);
+      setState(() {
+        daysDifference = difference.inDays;
+        output = daysDifference.toString();
+      });
+    }
+  }
+
+  // Numeral system conversion logic - Complete implementation
+  void _convertNumeralSystem() {
+    if (inputValue.isEmpty) {
+      setState(() {
+        output = '0';
+      });
+      return;
+    }
+
+    try {
+      int decimalValue = 0;
+      String sanitizedInput = inputValue.trim();
+      // Prevent negative numbers and invalid characters
+      if (sanitizedInput.startsWith('-'))
+        throw Exception('Negative not supported');
+      // Convert input to decimal first
+      switch (fromUnit) {
+        case 'Decimal':
+          if (!RegExp(r'^[0-9]+ ').hasMatch(sanitizedInput))
+            throw Exception('Invalid');
+          decimalValue = int.parse(sanitizedInput);
+          break;
+        case 'Binary':
+          if (!RegExp(r'^[01]+ ').hasMatch(sanitizedInput))
+            throw Exception('Invalid');
+          decimalValue = int.parse(sanitizedInput, radix: 2);
+          break;
+        case 'Octal':
+          if (!RegExp(r'^[0-7]+ ').hasMatch(sanitizedInput))
+            throw Exception('Invalid');
+          decimalValue = int.parse(sanitizedInput, radix: 8);
+          break;
+        case 'Hexadecimal':
+          if (!RegExp(r'^[0-9A-Fa-f]+ ').hasMatch(sanitizedInput))
+            throw Exception('Invalid');
+          decimalValue = int.parse(sanitizedInput, radix: 16);
+          break;
+        default:
+          throw Exception('Invalid system');
+      }
+
+      // Convert decimal to target system
+      String result = '';
+      switch (toUnit) {
+        case 'Decimal':
+          result = decimalValue.toString();
+          break;
+        case 'Binary':
+          result = decimalValue.toRadixString(2);
+          break;
+        case 'Octal':
+          result = decimalValue.toRadixString(8);
+          break;
+        case 'Hexadecimal':
+          result = decimalValue.toRadixString(16).toUpperCase();
+          break;
+        default:
+          result = decimalValue.toString();
+      }
+
+      setState(() {
+        output = result;
+      });
+    } catch (e) {
+      setState(() {
+        output = 'Invalid Input';
+      });
+    }
   }
 
   // BMI calculation logic - Complete implementation
-  void _calculateBMI(double value) {
-    if (weight == 0) {
-      weight = value;
-    } else {
-      height = value;
-      if (height > 0) {
-        bmi = weight / (height * height);
+  void _calculateBMI() {
+    if (_expression.isEmpty) return;
 
-        // Determine BMI category
-        if (bmi < 18.5) {
-          bmiCategory = 'Underweight';
-        } else if (bmi < 25) {
-          bmiCategory = 'Normal Weight';
-        } else if (bmi < 30) {
-          bmiCategory = 'Overweight';
-        } else {
-          bmiCategory = 'Obese';
-        }
-      }
-    }
+    double value = double.tryParse(_expression) ?? 0;
+    if (value <= 0) return;
 
     setState(() {
-      output = _formatNumber(bmi);
+      // Determine which value to update based on current state
+      if (weight == 0) {
+        // First input is weight
+        weight = value;
+        _expression = '';
+      } else if (height == 0) {
+        // Second input is height
+        height = value;
+        _expression = '';
+
+        // Calculate BMI when both values are available
+        if (height > 0) {
+          bmi = weight / (height * height);
+
+          // Determine BMI category
+          if (bmi < 18.5) {
+            bmiCategory = 'Underweight';
+          } else if (bmi < 25) {
+            bmiCategory = 'Normal Weight';
+          } else if (bmi < 30) {
+            bmiCategory = 'Overweight';
+          } else {
+            bmiCategory = 'Obese';
+          }
+
+          output = _formatNumber(bmi);
+        }
+      } else {
+        // Both values are set, allow updating either weight or height
+        // Determine which one to update based on which toggle is active
+        bool isEnteringWeight = weight == 0 || (weight > 0 && height == 0);
+
+        if (isEnteringWeight) {
+          weight = value;
+        } else {
+          height = value;
+        }
+
+        _expression = '';
+
+        // Recalculate BMI
+        if (height > 0) {
+          bmi = weight / (height * height);
+
+          // Determine BMI category
+          if (bmi < 18.5) {
+            bmiCategory = 'Underweight';
+          } else if (bmi < 25) {
+            bmiCategory = 'Normal Weight';
+          } else if (bmi < 30) {
+            bmiCategory = 'Overweight';
+          } else {
+            bmiCategory = 'Obese';
+          }
+
+          output = _formatNumber(bmi);
+        }
+      }
     });
   }
 
@@ -2536,137 +3336,154 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  // BMI calculator UI
+  // BMI calculator UI - Compact and beautiful
   Widget _buildBMICalculator() {
+    bool isEnteringWeight = weight == 0 || (weight > 0 && height == 0);
     return Column(
       children: [
-        // Weight Input Card
+        // Input Card (Weight & Height side by side)
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              color: Colors.white.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.18)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Weight (kg)',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                // Weight
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _expression = '';
+                      });
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.monitor_weight,
+                                color: Colors.amber.shade400, size: 20),
+                            SizedBox(width: 6),
+                            Text('Weight (kg)',
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 13)),
+                          ],
+                        ),
+                        SizedBox(height: 6),
+                        Text(weight == 0 ? '0' : weight.toString(),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold)),
+                        if (isEnteringWeight && _expression.isNotEmpty)
+                          Text('Entering: $_expression',
+                              style: TextStyle(
+                                  color: Colors.amber.shade400, fontSize: 12)),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  weight == 0 ? '0' : weight.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                Container(
+                    width: 1,
+                    height: 48,
+                    color: Colors.white.withOpacity(0.08)),
+                // Height
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _expression = '';
+                      });
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.height,
+                                color: Colors.blue.shade300, size: 20),
+                            SizedBox(width: 6),
+                            Text('Height (m)',
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 13)),
+                          ],
+                        ),
+                        SizedBox(height: 6),
+                        Text(height == 0 ? '0' : height.toString(),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold)),
+                        if (!isEnteringWeight && _expression.isNotEmpty)
+                          Text('Entering: $_expression',
+                              style: TextStyle(
+                                  color: Colors.blue.shade300, fontSize: 12)),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ),
-
-        // Height Input Card
+        // BMI Result Card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Height (m)',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  height == 0 ? '0' : height.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // BMI Result Card
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.green.shade400, Colors.green.shade600],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.green.shade400.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: Colors.green.shade400.withOpacity(0.18),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'BMI Result',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _formatNumber(bmi),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  bmiCategory,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Icon(Icons.favorite, color: Colors.white, size: 28),
+                SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('BMI',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text(_formatNumber(bmi),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold)),
+                    SizedBox(height: 2),
+                    Text(bmiCategory,
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 14)),
+                  ],
                 ),
               ],
             ),
           ),
         ),
-
         // Keypad
         Expanded(
           child: _buildConverterKeypad(onKeyTap: (val) {
@@ -2687,8 +3504,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               } else {
                 if (val == '.' && _expression.contains('.')) return;
                 _expression += val;
+                _calculateBMI();
               }
-              _calculateBMI(double.tryParse(_expression) ?? 0);
             });
           }),
         ),
@@ -2696,160 +3513,138 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  // GST calculator UI
+  // GST calculator UI - Compact and beautiful
   Widget _buildGSTCalculator() {
     return Column(
       children: [
-        // Base Price Input Card
+        // Input Card (Base Price & GST % side by side)
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              color: Colors.white.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.18)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Base Price',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                // Base Price
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.attach_money,
+                              color: Colors.amber.shade400, size: 20),
+                          SizedBox(width: 6),
+                          Text('Base Price',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 13)),
+                        ],
+                      ),
+                      SizedBox(height: 6),
+                      Text(basePrice == 0 ? '0' : basePrice.toString(),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  basePrice == 0 ? '0' : basePrice.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                Container(
+                    width: 1,
+                    height: 48,
+                    color: Colors.white.withOpacity(0.08)),
+                // GST %
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.percent,
+                              color: Colors.blue.shade300, size: 20),
+                          SizedBox(width: 6),
+                          Text('GST %',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 13)),
+                        ],
+                      ),
+                      SizedBox(height: 6),
+                      Text(gstPercent == 0 ? '0' : gstPercent.toString(),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         ),
-
-        // GST Percentage Input Card
+        // Result Card (GST Amount & Total Price)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GST Percentage',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+              gradient: LinearGradient(
+                colors: [Colors.purple.shade400, Colors.purple.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.shade400.withOpacity(0.18),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  gstPercent == 0 ? '0' : gstPercent.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.receipt_long, color: Colors.white, size: 28),
+                SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('GST Amount',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text(_formatNumber(gstAmount),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold)),
+                    SizedBox(height: 8),
+                    Text('Total Price',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text(_formatNumber(totalPrice),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ],
             ),
           ),
         ),
-
-        // Results
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            children: [
-              // GST Amount
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(top: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'GST Amount',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatNumber(gstAmount),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Total Price
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(top: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.purple.shade400, Colors.purple.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Price',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatNumber(totalPrice),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
         // Keypad
         Expanded(
           child: _buildConverterKeypad(onKeyTap: (val) {
@@ -3052,4 +3847,55 @@ class _ParticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
+}
+
+// Helper widget for birthday info cards
+class _BirthdayInfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  const _BirthdayInfoCard(
+      {required this.icon, required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.amber.shade200, size: 22),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

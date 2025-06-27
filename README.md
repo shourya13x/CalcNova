@@ -249,14 +249,6 @@ If you have any questions or need help, please:
 - 🧮 **Math Expressions**: For mathematical parsing
 - 👥 **Community**: For feedback and suggestions
 
-## 📊 **App Statistics** 📈
-
-- 📝 **Lines of Code**: 3,900+
-- ⚡ **Features**: 15+ calculators and converters
-- 📏 **Supported Units**: 50+ different units
-- 🌐 **Platforms**: 6 platforms (Android, iOS, Web, Windows, macOS, Linux)
-- 💻 **Languages**: Dart, HTML, CSS, JavaScript
-
 ---
 
 <div align="center">
